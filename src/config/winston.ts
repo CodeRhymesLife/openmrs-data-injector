@@ -16,18 +16,19 @@ if (!fs.existsSync(logDir)) {
 console.log(`${LOG_TAG} creating logger`);
 const logger = winston.createLogger({
   level: 'info',
-  format: winston.format.json(),
+  format: winston.format.timestamp({
+      format: 'YYYY-MM-DD HH:mm:ss'
+  }),  
   transports: [
     new winston.transports.File({
       filename: logFilePath,
-      timestamp: true,
     }),
     new winston.transports.Console({
       format: winston.format.simple(),
-      timestamp: true,
     }),
   ],
 });
 
 logger.info(`${LOG_TAG} logger created successfully`);
 export default logger;
+

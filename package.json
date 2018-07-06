@@ -5,20 +5,25 @@
   "author": "Ryan James",
   "license": "None",
   "private": true,
+  "engines": {
+    "node": ">=10.6.0"
+  },
   "scripts": {
-    "dev:start": "nodemon --ignore lib --exec babel-node src",
-    "lint": "./node_modules/.bin/eslint src"
+    "start": "yarn build && node build/index.js",
+    "build": "./node_modules/.bin/tsc",
+    "dev:start": "yarn build && nodemon build/index.js",
+    "tslint": "tslint -c tslint.json -p tsconfig.json"
   },
   "dependencies": {
-    "babel-eslint": "^8.2.5",
-    "eslint": "^5.0.1",
     "exceljs": "^1.5.1",
     "fs": "^0.0.1-security",
     "winston": "^3.0.0"
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-polyfill": "^6.26.0",
-    "babel-preset-env": "^1.7.0"
+    "@types/async": "^2.0.49",
+    "@types/node": "^10.5.2",
+    "@types/winston": "^2.3.9",
+    "tslint": "^5.10.0",
+    "typescript": "^2.9.2"
   }
 }
