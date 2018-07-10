@@ -18,7 +18,7 @@ const logger = winston.createLogger({
   level: 'info',
   format: winston.format.timestamp({
       format: 'YYYY-MM-DD HH:mm:ss'
-  }),  
+  }),
   transports: [
     new winston.transports.File({
       filename: logFilePath,

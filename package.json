@@ -15,8 +15,8 @@
     "tslint": "tslint -c tslint.json -p tsconfig.json"
   },
   "dependencies": {
-    "exceljs": "^1.5.1",
     "fs": "^0.0.1-security",
+    "google-spreadsheet": "^2.0.5",
     "winston": "^3.0.0"
   },
   "devDependencies": {
