@@ -1,7 +1,9 @@
+import _ from 'lodash';
 import GoogleSpreadsheet from 'google-spreadsheet';
 
 import logger from '../config/winston';
-import Parser from './Parser';
+import Parser from './parser';
+import { OpenMRSData, OpenMRSEncounter, OpenMRSPatient, OpenMRSSex, OpenMRSTest } from './openMRSData'
 
 const LOG_TAG: string = '[GoogleSpreadsheetParser]';
 
@@ -10,7 +12,7 @@ export default class GoogleSpreadsheetParser implements Parser {
     /**
      * Parses a google spreadsheet
      */
-    public async parse(spreadsheetId: string) {
+    public async parse(spreadsheetId: string): Promise<OpenMRSData> {
         logger.info(`${LOG_TAG} retrieving data for spreadsheet ${spreadsheetId}`);
         const doc = new PromiseGoogleSpreadsheet(spreadsheetId);
 
@@ -27,9 +29,67 @@ export default class GoogleSpreadsheetParser implements Parser {
             offset: 1, // Ignore the header row
         });
         logger.info(`${LOG_TAG} successfully retrieved ${rows.length} rows`);
+        //logger.info(`${LOG_TAG} ${JSON.stringify(rows, null, 2)} rows`);
+
+        return this.rowsToOpenMRS(rows);
     }
 
+    /** Maps google spread sheet rows to the Open MRS Data format */
+    private rowsToOpenMRS(rows: GoogleRow[]): OpenMRSData {
+        logger.info(`${LOG_TAG} converting rows to the open mrs data format`);
+        
+        const data: OpenMRSData = {};
 
+        const getOrCreateTest = (row: GoogleRow): OpenMRSTest => {
+            const testId = row['testid'];
+            let test = data[testId];
+            if(!test) {
+                test = data[testId] = {
+                    id: testId,
+                    patients: {},
+                };
+            }
+
+            return test;
+        }
+
+        const getOrCreatePatient = (row: GoogleRow): OpenMRSPatient => {
+            const nid = row['nid']
+            const test = getOrCreateTest(row);
+            let patient = test.patients[nid];
+            if(!patient) {
+                const sexString = row['gender'].toUpperCase() as keyof typeof OpenMRSSex;
+                patient = test.patients[nid] = {
+                    nid,
+                    location: '',
+                    sex: OpenMRSSex[sexString],
+                    birthdate: new Date(row['dateofbirth']),
+                    encounters: <OpenMRSEncounter[]>[],
+                }
+            }
+
+            return patient;
+        }
+
+        const addEncounters = (row: GoogleRow): OpenMRSEncounter => {
+            const patient = getOrCreatePatient(row);
+            
+            if(row['artstartdatevisit']) {
+                patient.encounters.push({
+                    type: '',
+                    startDate: new Date(row['artstartdatevisit']),
+                    location: '',
+                });
+            }
+            return <OpenMRSEncounter>null;
+        }
+
+        rows.forEach((row) => {
+             const patient: OpenMRSPatient = getOrCreatePatient(row);
+        });
+
+        return data;
+    }
 }
 
 /**
@@ -59,7 +119,7 @@ class PromiseGoogleSpreadsheet {
                         title: data.title,
                         updated: data.updated,
                         author: data.author,
-                        worksheets: data.worksheets.map(w => new PromiseGoogleWorksheet(w)),
+                        worksheets: _.map(data.worksheets, w => new PromiseGoogleWorksheet(w)),
                     });
                 }
             });
@@ -106,8 +166,7 @@ interface GoogleSpreadSheetData extends SpreadSheetData<GoogleWorksheet> { }
 interface PromiseGoogleSpreadSheetData extends SpreadSheetData<PromiseGoogleWorksheet> { }
 
 interface GoogleRow {
-    colname: string;
-    value: string;
+    [key: string]: string;
 }
 
 interface GoogleWorksheet {
